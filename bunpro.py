@@ -1,18 +1,30 @@
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
-import time
-import pandas as pd
-import re
-import os
-import web_interaction
-# SETUP -------------------------------------------------------------------------------------#
+import tkinter as tk
+from tkinter import Button, Entry
 
+root = tk.Tk()
+root.title("Bunpro Progress Updater")
+root.geometry("400x300")
 
+label = tk.Label(root, text="Update your SRS stage on all the vocabulary you already know!")
+label.grid(row=0, column=0, columnspan=3)
 
+def wanikani_button_click():
+    label.config(text="clicked")
 
+wanikani_api_entry = Entry(root)
+wanikani_api_entry.insert(0, "Enter your Wanikani API Key")
+wanikani_api_entry.grid(row=1, column=0)
 
-# ----------------------------------------------------------------------------------------------#
+wanikani_import_button = Button(root, text="Find all the known words from Wanikani", command=wanikani_button_click)
+wanikani_import_button.grid(row=1, column=2)
+
+def anki_button_click():
+    pass
+
+anki_import_button = Button(root, text="import words from anki", command=anki_button_click)
+anki_import_button.grid(row=2, column = 1)
+
+root.mainloop()
 
 """
 bunpro = web_interaction.Bunpro()
