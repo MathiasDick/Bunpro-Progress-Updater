@@ -1,195 +1,136 @@
-import tkinter as tk
-from tkinter import Button, Entry, Checkbutton
-from tkinter.constants import BOTTOM, RIGHT
+import sys
+from PySide6 import QtCore as qtc
+from PySide6 import QtWidgets as qtw
+from PySide6 import QtGui as qtg
 
-import ttkbootstrap as ttk
-
+from UI.Bunpro_Form import Ui_w_Bunpro
+from UI.Vocab_list import Ui_w_Vocab_List
 import web_interaction
 
 
-def bunpro_bot(start_page, end_page, decks):
+class Bunpro(qtw.QWidget, Ui_w_Bunpro):
+    def __init__(self):
+        super().__init__()
+        self.setupUi(self)
+
+        self.vocab_window = None
+
+        self.pb_wanikani_api_import.clicked.connect(self.wanikani_api_import)
+        self.pb_wanikani_select.clicked.connect(self.wanikani_import)
+        self.pb_anki_select.clicked.connect(self.anki_import)
+
+        self.cb_all.stateChanged.connect(self.switch_checkbox)
+        self.cb_all_pages.stateChanged.connect(self.switch_page_select)
+        self.pb_start_bot.clicked.connect(self.start_bot)
+        self.pb_check_vocab.clicked.connect(self.check_vocab)
+
+        self.le_anki_file.setText("files/anki_vocab.txt")
+        self.le_wanikani_file.setText("files/wanikani_vocab.csv")
+
+    @qtc.Slot()
+    def wanikani_api_import(self):
+        api =  self.le_wanikani_api.text()
+        wanikani = web_interaction.Wanikani(api)
+        wanikani.create_list()
+        self.lb_wanikani_message.setText("Successfully imported!")
+
+    @qtc.Slot()
+    def wanikani_import(self):
+        dialog = qtw.QFileDialog()
+        dialog.setNameFilter("*.csv")
+        dialog_successful = dialog.exec()
+
+        if dialog_successful:
+            self.wanikani_file = dialog.selectedFiles()[0]
+            self.le_wanikani_file.setText(self.wanikani_file)
+
+    @qtc.Slot()
+    def anki_import(self):
+        dialog = qtw.QFileDialog()
+        dialog.setNameFilter("*.txt")
+        dialog_successful = dialog.exec()
+
+        if dialog_successful:
+            self.anki_file = dialog.selectedFiles()[0]
+            self.le_anki_file.setText(self.anki_file)
+
+    @qtc.Slot()
+    def switch_checkbox(self):
+        if self.cb_all.isChecked():
+            self.cb_n1.setChecked(True)
+            self.cb_n2.setChecked(True)
+            self.cb_n3.setChecked(True)
+            self.cb_n4.setChecked(True)
+            self.cb_n5.setChecked(True)
+        else:
+            self.cb_n1.setChecked(False)
+            self.cb_n2.setChecked(False)
+            self.cb_n3.setChecked(False)
+            self.cb_n4.setChecked(False)
+            self.cb_n5.setChecked(False)
+
+    @qtc.Slot()
+    def switch_page_select(self):
+        self.sb_starting_page.setValue(1)
+        self.sb_ending_page.setValue(0)
+        if self.cb_all_pages.isChecked():
+            self.sb_starting_page.setDisabled(True)
+            self.sb_ending_page.setDisabled(True)
+        else:
+            self.sb_starting_page.setDisabled(False)
+            self.sb_ending_page.setDisabled(False)
+
+    @qtc.Slot()
+    def start_bot(self):
+        start_page = self.sb_starting_page.value()
+        end_page = self.sb_ending_page.value()
+        decks = []
+        decks.append("qqovik/Bunpro-N1-Vocab") if self.cb_n1.isChecked() else 0
+        decks.append("dxbsvk/Bunpro-N2-Vocab") if self.cb_n2.isChecked() else 0
+        decks.append("mvt76c/Bunpro-N3-Vocab") if self.cb_n3.isChecked() else 0
+        decks.append("lh0vxb/Bunpro-N4-Vocab") if self.cb_n4.isChecked() else 0
+        decks.append("resqiy/Bunpro-N5-Vocab") if self.cb_n5.isChecked() else 0
+
+        bunpro.get_vocab(self.le_wanikani_file.text(), self.le_anki_file.text())
+
+        bunpro.login()
+
+        for deck in decks:
+            print(deck)
+            start_mastered = len(bunpro.mastered_vocab)
+            bunpro.edit_deck(start_page, end_page, deck)
+            print(f"Mastered {len(bunpro.mastered_vocab) - start_mastered} in deck {deck.split("/")[1]}")
+
+        print(f"Mastered {len(bunpro.mastered_vocab)} items")
+        print(bunpro.mastered_vocab)
+
+    @qtc.Slot()
+    def check_vocab(self):
+        bunpro.get_vocab(self.le_wanikani_file.text(), self.le_anki_file.text())
+        if self.vocab_window is None or not self.vocab_window.isVisible():
+            self.vocab_window = CheckVocab()
+        self.vocab_window.lw_vocab.addItems(bunpro.imported_vocab_list)
+        self.vocab_window.l_known_vocab.setText(f"You know {len(bunpro.imported_vocab_list)} Words. All of these will be set as mastered in Bunpro")
+        self.vocab_window.show()
+
+class CheckVocab(qtw.QWidget, Ui_w_Vocab_List):
+    def __init__(self):
+        super().__init__()
+        self.setupUi(self)
+
+        self.show()
+        self.pb_close.clicked.connect(self.close)
+
+
+
+
+
+if __name__ == '__main__':
+    app = qtw.QApplication(sys.argv)
+
     bunpro = web_interaction.Bunpro()
 
-    bunpro.get_vocab()
-    bunpro.login()
+    window = Bunpro()
+    window.show()
 
-    for deck in decks:
-        print(deck)
-        start_mastered = len(bunpro.mastered_vocab)
-        bunpro.edit_deck(start_page, end_page, deck)
-        print(f"Mastered {len(bunpro.mastered_vocab) - start_mastered} in deck {deck.split("/")[1]}")
-
-    print(f"Mastered {len(bunpro.mastered_vocab)} items")
-    print(bunpro.mastered_vocab)
-
-root = ttk.Window(themename="darkly")
-root.title("Bunpro Progress Updater")
-root.geometry("500x600")
-
-label = ttk.Label(root, text="Update your SRS stage on all the vocabulary you already know!")
-label.pack(pady=5)
-
-def wanikani_button_click():
-    wanikani_message_str.set("Success!")
-
-
-wanikani_api_key = tk.StringVar()
-
-wanikani_frame = ttk.Frame(borderwidth= 10, relief=tk.GROOVE)
-
-wanikani_heading = ttk.Label(wanikani_frame, text="Wanikani")
-wanikani_heading.pack(pady=5)
-
-wanikani_api_frame = ttk.Frame(wanikani_frame)
-
-wanikani_api_entry = ttk.Entry(wanikani_api_frame, textvariable=wanikani_api_key, width=30)
-wanikani_api_entry.insert(0, "Enter your Wanikani API Key")
-wanikani_api_entry.pack(pady=5, side="left", padx=5)
-
-wanikani_import_button = ttk.Button(wanikani_api_frame, text="Find all the known words from Wanikani", command=wanikani_button_click)
-wanikani_import_button.pack(pady=5, padx=5, side=RIGHT)
-
-wanikani_api_frame.pack()
-
-wanikani_message_str = tk.StringVar()
-wanikani_message = ttk.Label(wanikani_frame, textvariable=wanikani_message_str)
-wanikani_message.pack(pady=5)
-
-
-
-wanikani_frame.pack(pady=5)
-
-
-# Anki --------------------------------------------------------------------
-anki_frame = ttk.Frame(root, borderwidth= 10, relief=tk.GROOVE)
-def anki_button_click():
-    anki_message_str.set("Success")
-
-anki_heading = ttk.Label(anki_frame, text="Anki")
-anki_heading.pack(pady=5)
-
-anki_import_button = ttk.Button(anki_frame, text="import words from anki", command=anki_button_click)
-anki_import_button.pack(pady=5)
-
-anki_message_str = tk.StringVar()
-anki_message = ttk.Label(anki_frame, textvariable=anki_message_str)
-anki_message.pack()
-
-anki_frame.pack(pady=5)
-
-# Bunpro -------------------------------------------------------------------------
-bunpro_frame = ttk.Frame(borderwidth= 10, relief=tk.GROOVE)
-
-bunpro_section_heading = ttk.Label(bunpro_frame, text="Bunpro")
-bunpro_section_heading.pack()
-
-deck_frame = ttk.Frame(bunpro_frame)
-
-check_var1 = tk.IntVar()
-check_var2 = tk.IntVar()
-check_var3 = tk.IntVar()
-check_var4 = tk.IntVar()
-check_var5 = tk.IntVar()
-
-
-n5_check = ttk.Checkbutton(deck_frame, text="N5 Deck", onvalue=5, offvalue=0, variable=check_var5)
-n5_check.pack(side="left", padx=5)
-
-n4_check = ttk.Checkbutton(deck_frame, text="N4 Deck", onvalue=4, offvalue=0, variable=check_var4)
-n4_check.pack(side="left", padx=5)
-
-n3_check = ttk.Checkbutton(deck_frame, text="N3 Deck", onvalue=3, offvalue=0, variable=check_var3)
-n3_check.pack(side="left", padx=5)
-
-n2_check = ttk.Checkbutton(deck_frame, text="N2 Deck", onvalue=2, offvalue=0, variable=check_var2)
-n2_check.pack(side="left", padx=5)
-
-n1_check = ttk.Checkbutton(deck_frame, text="N1 Deck", onvalue=1, offvalue=0, variable=check_var1)
-n1_check.pack(side="left", padx=5)
-
-def deck_select_btn():
-    text = deck_select_text.get()
-    if text == "uncheck all":
-        print("unselect all")
-        deck_select_text.set("select all")
-        check_var1.set(0)
-        check_var2.set(0)
-        check_var3.set(0)
-        check_var4.set(0)
-        check_var5.set(0)
-
-
-    elif text == "select all":
-        print("select all")
-        deck_select_text.set("uncheck all")
-        check_var1.set(1)
-        check_var2.set(2)
-        check_var3.set(3)
-        check_var4.set(4)
-        check_var5.set(5)
-
-deck_select_text = ttk.StringVar()
-deck_select_text.set("select all")
-deck_select = ttk.Button(deck_frame, textvariable=deck_select_text, command=deck_select_btn)
-deck_select.pack(side="left", padx=5)
-
-deck_frame.pack(pady=10)
-
-page_frame = ttk.Frame(bunpro_frame)
-
-start_page_int = tk.IntVar()
-start_page_label = ttk.Label(page_frame, text="Starting Page: ")
-start_page_entry = ttk.Entry(page_frame, textvariable=start_page_int)
-start_page_label.pack(side="left", padx=5)
-start_page_entry.pack(side="left", padx=5)
-
-end_page_int = tk.IntVar()
-end_page_label = ttk.Label(page_frame, text="Ending Page: ")
-end_page_entry = ttk.Entry(page_frame, textvariable=end_page_int)
-end_page_label.pack(side="left", padx=5)
-end_page_entry.pack(side="left", padx=5)
-
-page_frame.pack(pady=10)
-
-
-
-
-def all_pages():
-    if all_pages_int.get() == 1:
-        start_page_entry.config(state="disable")
-        end_page_entry.config(state="disable")
-        start_page_int.set(1)
-        end_page_int.set(0)
-    elif all_pages_int.get() == 0:
-        start_page_entry.config(state="normal")
-        end_page_entry.config(state="normal")
-
-
-all_pages_int = tk.IntVar()
-all_pages = Checkbutton(bunpro_frame, text="Go through all pages", onvalue=1, offvalue=0, command=all_pages, variable=all_pages_int)
-all_pages.pack()
-
-def start_bot():
-    selected_decks = [DECKS[check_var1.get()], DECKS[check_var2.get()], DECKS[check_var3.get()], DECKS[check_var4.get()], DECKS[check_var5.get()]]
-    selected_decks = [deck for deck in selected_decks if deck]
-    if not selected_decks:
-        bunpro_message_str.set("Please select at least one deck")
-    else:
-        bunpro_message_str.set("Starting the Bot")
-        bunpro_bot(start_page_int.get(), end_page_int.get(), selected_decks)
-
-
-start_btn = ttk.Button(bunpro_frame, text="Start mastering Bot", command=start_bot)
-start_btn.pack()
-
-bunpro_message_str = tk.StringVar()
-bunpro_message = ttk.Label(bunpro_frame, textvariable=bunpro_message_str)
-bunpro_message.pack()
-
-bunpro_frame.pack(pady=5)
-
-DECKS = ["", "qqovik/Bunpro-N1-Vocab",
-         "dxbsvk/Bunpro-N2-Vocab", "mvt76c/Bunpro-N3-Vocab", "lh0vxb/Bunpro-N4-Vocab" , "resqiy/Bunpro-N5-Vocab"]
-
-root.mainloop()
-
+    sys.exit(app.exec())
