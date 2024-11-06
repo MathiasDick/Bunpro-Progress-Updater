@@ -10,33 +10,36 @@ import os
 
 class Bunpro:
     def __init__(self):
-        self.chrome_options = webdriver.ChromeOptions()
-        self.chrome_options.add_experimental_option("detach", True)
-        self.chrome_options.add_argument("--disable-search-engine-choice-screen")
-        self.driver = webdriver.Chrome(options=self.chrome_options)
+
         self.imported_vocab_list = []
         self.mastered_vocab = []
-        self.start_time = time.time()
+
 
 
     def login(self):
         """Opens Selenium on Bunpro and logs User in with the Account Data from the environment Variables"""
+        self.chrome_options = webdriver.ChromeOptions()
+        self.chrome_options.add_experimental_option("detach", True)
+        self.chrome_options.add_argument("--disable-search-engine-choice-screen")
+        self.driver = webdriver.Chrome(options=self.chrome_options)
+        self.start_time = time.time()
         self.driver.get("https://bunpro.jp/login")
         time.sleep(5)
         self.driver.maximize_window()
-        self.driver.find_element(By.ID, value="user_email").send_keys(os.getenv("BUNPRO_EMAIL"))
+        self.driver.find_element(By.CSS_SELECTOR, value="input#user_email").click()
+        self.driver.find_element(By.CSS_SELECTOR, value="input#user_email").send_keys(os.getenv("BUNPRO_EMAIL"))
         pass_field = self.driver.find_element(By.ID, value="user_password")
         pass_field.send_keys(os.getenv("BUNPRO_PASSWORD"))
         pass_field.send_keys(Keys.ENTER)
         time.sleep(5)
 
-    def get_vocab(self):
+    def get_vocab(self, wanikani_file, anki_file):
         """Add all the known Vocabulary listed in the wanikani_vocab.csv from Wanikani and anki_vocab.txt from Anki ot the imported_vocab_list"""
         # Wanikani Vocab
-        self.imported_vocab_list = pd.read_csv("files/wanikani_vocab.csv")["Vocab"].to_list()
+        self.imported_vocab_list = pd.read_csv(wanikani_file)["Vocab"].to_list()
 
         # Anki Vocab
-        with open("files/anki_vocab.txt", encoding='utf-8') as file:
+        with open(anki_file, encoding='utf-8') as file:
             content = file.readlines()
 
         words = [re.sub("[\(\[\{].*?[\)\]\}]", "", word.replace('"', "").strip()) for word in content]
@@ -96,9 +99,10 @@ class Bunpro:
             f"{self.imported_vocab_list}\nThese are the words, that will be set to known.\nThey are {len(self.imported_vocab_list)} words")
 
 class Wanikani:
-    def __init__(self):
+    def __init__(self, api):
         self.df = pd.DataFrame()
-        self.client = wanikani_api.client.Client(os.getenv("WANIKANI_API"))
+        self.wanikani_api = api if api else os.getenv("WANIKANI_API")
+        self.client = wanikani_api.client.Client(self.wanikani_api)
         self.words = []
         self.mean = []
 
