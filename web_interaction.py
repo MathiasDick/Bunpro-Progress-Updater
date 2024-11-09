@@ -1,119 +1,164 @@
+import logging
+import time
+import re
+import pandas as pd
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import NoSuchElementException, TimeoutException
 import wanikani_api.client
-import time
-import pandas as pd
-import re
-import os
+from UI.Bunpro_Form import Ui_w_Bunpro
+
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
 class Bunpro:
-    def __init__(self):
-
+    def __init__(self, gui):
+        self.start_time = None
+        self.driver = None
+        self.chrome_options = None
+        self.bunpro_gui : Ui_w_Bunpro = gui
         self.imported_vocab_list = []
         self.mastered_vocab = []
 
 
 
     def login(self):
-        """Opens Selenium on Bunpro and logs User in with the Account Data from the environment Variables"""
-        self.chrome_options = webdriver.ChromeOptions()
-        self.chrome_options.add_experimental_option("detach", True)
-        self.chrome_options.add_argument("--disable-search-engine-choice-screen")
-        self.driver = webdriver.Chrome(options=self.chrome_options)
-        self.start_time = time.time()
-        self.driver.get("https://bunpro.jp/login")
-        time.sleep(5)
-        self.driver.maximize_window()
-        self.driver.find_element(By.CSS_SELECTOR, value="input#user_email").click()
-        self.driver.find_element(By.CSS_SELECTOR, value="input#user_email").send_keys(os.getenv("BUNPRO_EMAIL"))
-        pass_field = self.driver.find_element(By.ID, value="user_password")
-        pass_field.send_keys(os.getenv("BUNPRO_PASSWORD"))
-        pass_field.send_keys(Keys.ENTER)
-        time.sleep(5)
+        """Logs user into Bunpro using provided credentials"""
+        try:
+            self.chrome_options = webdriver.ChromeOptions()
+            self.chrome_options.add_experimental_option("detach", True)
+            self.chrome_options.add_argument("--disable-search-engine-choice-screen")
+            self.driver = webdriver.Chrome(options=self.chrome_options)
+            self.start_time = time.time()
+            self.driver.get("https://bunpro.jp/login")
+            self.driver.maximize_window()
+
+            # Wait until login form is present
+            WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.ID, "user_email")))
+            logging.info("Login page loaded.")
+
+            # Fill login form with credentials
+            self.driver.find_element(By.CSS_SELECTOR, value="input#user_email").click()
+            self.driver.find_element(By.CSS_SELECTOR, value="input#user_email").send_keys(self.bunpro_gui.le_bunpro_email.text())
+            pass_field = self.driver.find_element(By.ID, value="user_password")
+            pass_field.send_keys(self.bunpro_gui.le_bunpro_password.text())
+            pass_field.send_keys(Keys.ENTER)
+
+            # Wait until the user is logged in and the main page loads
+            WebDriverWait(self.driver, 10).until(EC.url_contains("https://bunpro.jp/dashboard"))
+            logging.info("Logged into Bunpro successfully.")
+        except (NoSuchElementException, TimeoutException) as e:
+            logging.error("Login failed: %s", e)
+            self.bunpro_gui.lb_bot_message.setText("Login failed. Please check your credentials.")
 
     def get_vocab(self, wanikani_file, anki_file):
         """Add all the known Vocabulary listed in the wanikani_vocab.csv from Wanikani and anki_vocab.txt from Anki ot the imported_vocab_list"""
-        # Wanikani Vocab
-        self.imported_vocab_list = pd.read_csv(wanikani_file)["Vocab"].to_list()
+        # Import Wanikani vocab
+        try:
+            self.imported_vocab_list = pd.read_csv(wanikani_file)["Vocab"].to_list()
+            self.bunpro_gui.lb_wanikani_message.setText("Wanikani file successfully imported")
+            logging.info("Wanikani vocabulary imported.")
+        except Exception as e:
+            logging.error("Failed to import Wanikani vocabulary: %s", e)
+            self.bunpro_gui.lb_wanikani_message.setText("No Wanikani file found")
 
-        # Anki Vocab
-        with open(anki_file, encoding='utf-8') as file:
-            content = file.readlines()
-
-        words = [re.sub("[\(\[\{].*?[\)\]\}]", "", word.replace('"', "").strip()) for word in content]
-        for word in words:
-            word = word.replace("\ufeff", "").split(" ")
-            for entry in word:
-                self.imported_vocab_list.append(entry)
-
+        # Import Anki vocab
+        try:
+            with open(anki_file, encoding='utf-8') as file:
+                content = file.readlines()
+            words = [re.sub("[\(\[\{].*?[\)\]\}]", "", word.replace('"', "").strip()) for word in content]
+            for word in words:
+                word = word.replace("\ufeff", "").split(" ")
+                for entry in word:
+                    self.imported_vocab_list.append(entry)
+            self.bunpro_gui.lb_anki_message.setText("Anki file successfully imported")
+            logging.info("Anki vocabulary imported.")
+        except Exception as e:
+            logging.error("Failed to import Anki vocabulary: %s", e)
+            self.bunpro_gui.lb_anki_message.setText("No Anki file found")
 
     def set_learnt(self, item):
-        time.sleep(0.3)
-        item.find_element(By.CLASS_NAME, value="dropdown-toggle").click() # click on dropdown
-        time.sleep(0.3)
-        buttons = item.find_elements(By.CSS_SELECTOR, value="div.dropdown-menu li.u-flex")
-        for button in buttons:
-            if button.text == "Mark as Mastered":
-                button.click()
+        """Marks an item as mastered in the Bunpro vocabulary list"""
+        try:
+            # Open item dropdown to select "Mark as Mastered"
+            item.find_element(By.CLASS_NAME, value="dropdown-toggle").click()
+            WebDriverWait(self.driver, 3).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, "div.dropdown-menu li.u-flex"))
+            )
+            buttons = item.find_elements(By.CSS_SELECTOR, "div.dropdown-menu li.u-flex")
+            for button in buttons:
+                if button.text == "Mark as Mastered":
+                    button.click()
+                    break
+            logging.info("Marked item as mastered.")
+        except NoSuchElementException:
+            logging.warning("Could not find the mastery option for this item.")
+        except TimeoutException:
+            logging.warning("Dropdown for mastery option did not load in time.")
 
 
     def edit_deck(self, page, stop_page, deck):
-        self.driver.get(f"https://bunpro.jp/decks/{deck}?page={str(page)}")
-        page_start_time = time.time() # Starts timer for Page
-        time.sleep(5)
+        """Navigates through deck pages to mark vocabulary as mastered"""
+        try:
+            # Load deck page
+            self.driver.get(f"https://bunpro.jp/decks/{deck}?page={str(page)}")
+            WebDriverWait(self.driver, 10).until(
+                EC.presence_of_all_elements_located((By.CLASS_NAME, "deck-info-card"))
+            )
+            logging.info("Navigated to page %d of deck %s.", page, deck)
 
-        if stop_page == 0: # find last page of a deck
-            stop_page = int(self.driver.find_elements(By.CSS_SELECTOR, value="nav.pagy-nav span.page")[-2].text)
-            print(stop_page)
-            time.sleep(5)
+            if stop_page == 0:
+                stop_page = int(self.driver.find_elements(By.CSS_SELECTOR, "nav.pagy-nav span.page")[-2].text)
+                logging.info("Identified last page as %d.", stop_page)
 
-        items = self.driver.find_elements(By.CLASS_NAME, value="deck-info-card") # Each word
-        for item in items: # For each Word
-            srs_stage = item.find_elements(By.CSS_SELECTOR, value="div.u-flex.u-items_center")[-1].text # find the SRS Stage of the Word
-            vocab = item.find_element(By.CLASS_NAME, value="deck-card-title").text.split("\n") # Find Word name
-            if len(vocab) <= 2: # if there are less than two entries than the word has no Kanji between Kana
-                vocab = vocab[0]
-            else: # Skip the Kanji
-                vocab = f"{vocab[0]}{vocab[-1]}"
-            print(f"working on {vocab} with SRS: {srs_stage}")
+            # Process each vocabulary item on the page
+            items = self.driver.find_elements(By.CLASS_NAME, "deck-info-card")
+            for item in items:
+                srs_stage = item.find_elements(By.CSS_SELECTOR, "div.u-flex.u-items_center")[-1].text
+                vocab = item.find_element(By.CLASS_NAME, "deck-card-title").text.split("\n")
+                vocab = vocab[0] if len(vocab) <= 2 else f"{vocab[0]}{vocab[-1]}"
+                logging.info("Processing vocab %s with SRS stage %s", vocab, srs_stage)
 
-            if vocab in self.imported_vocab_list and srs_stage != "SRS 12":
-                print(f"{vocab}should be mastered")
-                self.set_learnt(item) # set word as mastered
-                self.mastered_vocab.append(vocab) # add word to mastered list
-            elif srs_stage == "SRS12":
-                print(f"{vocab} already mastered")
-            else:
-                print(f"{vocab} not known")
+                if vocab in self.imported_vocab_list and srs_stage != "SRS 12":
+                    self.set_learnt(item)
+                    self.mastered_vocab.append(vocab)
+                elif srs_stage == "SRS 12":
+                    logging.info("%s already mastered", vocab)
+                else:
+                    logging.info("%s not known", vocab)
 
-        print(f"Page {page} took {time.time() - page_start_time} seconds")
-        print(f"Program has been running for {time.time() - self.start_time} seconds")
-        time.sleep(2)
-        if page < stop_page: # if the last page was not reached, go to the next
-            self.edit_deck(page + 1, stop_page, deck)
+            if page < stop_page:
+                self.edit_deck(page + 1, stop_page, deck)
+        except (NoSuchElementException, TimeoutException) as e:
+            logging.error("Failed to load or process page %d of deck %s: %s", page, deck, e)
 
-    def print_word_list(self):
-        print(
-            f"{self.imported_vocab_list}\nThese are the words, that will be set to known.\nThey are {len(self.imported_vocab_list)} words")
 
 class Wanikani:
     def __init__(self, api):
         self.df = pd.DataFrame()
-        self.wanikani_api = api if api else os.getenv("WANIKANI_API")
+        self.wanikani_api = api
         self.client = wanikani_api.client.Client(self.wanikani_api)
         self.words = []
         self.mean = []
 
-    def create_list(self):
-        all_vocabulary = self.client.subjects(types="vocabulary", fetch_all=True)
-        for word in all_vocabulary:
-            self.words.append(word.characters)
-        for meaning in all_vocabulary:
-            self.mean.append(meaning.meanings[0].meaning)
-        self.df["Vocab"] = self.words
-        self.df["Meaning"] = self.mean
-        self.df.to_csv("files/wanikani_vocab.csv", index=False)
+    def create_list(self, bunpro_gui : Ui_w_Bunpro):
+        """Fetches vocabulary from Wanikani API and saves it to a CSV file"""
+        try:
+            all_vocabulary = self.client.subjects(types="vocabulary", fetch_all=True)
+            self.words = [word.characters for word in all_vocabulary]
+            self.mean = [meaning.meanings[0].meaning for meaning in all_vocabulary]
+            self.df["Vocab"] = self.words
+            self.df["Meaning"] = self.mean
+            self.df.to_csv("files/wanikani_vocab.csv", index=False)
+            bunpro_gui.lb_wanikani_message.setText("Wanikani file successfully created")
+            logging.info("Wanikani vocabulary file created.")
+        except Exception as e:
+            logging.error("Failed to create Wanikani vocabulary list: %s", e)
+            bunpro_gui.lb_wanikani_message.setText("Failed to create Wanikani file")
 
 

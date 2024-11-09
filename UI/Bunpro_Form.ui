@@ -6,12 +6,16 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>612</width>
-    <height>434</height>
+    <width>616</width>
+    <height>524</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Bunpro Progress Updater</string>
+   <string>Bunpro Progress Updater | by Mathias Dick</string>
+  </property>
+  <property name="windowIcon">
+   <iconset>
+    <normaloff>:/Main Window/bunpro-removebg-preview.png</normaloff>:/Main Window/bunpro-removebg-preview.png</iconset>
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="0" column="0">
@@ -36,7 +40,7 @@
       <item row="1" column="0">
        <widget class="QLabel" name="label_3">
         <property name="text">
-         <string>Select Vocab on Disk</string>
+         <string>Select Wanikani vocab on disk</string>
         </property>
        </widget>
       </item>
@@ -46,14 +50,14 @@
       <item row="0" column="2">
        <widget class="QPushButton" name="pb_wanikani_api_import">
         <property name="text">
-         <string>Save Vocab on Disk</string>
+         <string>Save vocab on disk</string>
         </property>
        </widget>
       </item>
       <item row="0" column="0">
        <widget class="QLabel" name="label">
         <property name="text">
-         <string>Enter your Wanikani API Key</string>
+         <string>Enter your Wanikani API key</string>
         </property>
        </widget>
       </item>
@@ -61,6 +65,9 @@
        <widget class="QLabel" name="lb_wanikani_message">
         <property name="text">
          <string/>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignmentFlag::AlignCenter</set>
         </property>
        </widget>
       </item>
@@ -76,6 +83,16 @@
       <set>Qt::AlignmentFlag::AlignCenter</set>
      </property>
      <layout class="QGridLayout" name="gridLayout_4">
+      <item row="0" column="0">
+       <widget class="QLabel" name="label_4">
+        <property name="text">
+         <string>Select Anki vocab on disk</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QLineEdit" name="le_anki_file"/>
+      </item>
       <item row="0" column="2">
        <widget class="QPushButton" name="pb_anki_select">
         <property name="text">
@@ -83,15 +100,15 @@
         </property>
        </widget>
       </item>
-      <item row="0" column="0">
-       <widget class="QLabel" name="label_4">
+      <item row="1" column="1">
+       <widget class="QLabel" name="lb_anki_message">
         <property name="text">
-         <string>Select Anki Vocab on Disk</string>
+         <string/>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignmentFlag::AlignCenter</set>
         </property>
        </widget>
-      </item>
-      <item row="0" column="1">
-       <widget class="QLineEdit" name="le_anki_file"/>
       </item>
      </layout>
     </widget>
@@ -162,7 +179,7 @@
          <item row="0" column="0">
           <widget class="QLabel" name="label_2">
            <property name="text">
-            <string>Select the Decks you want to update</string>
+            <string>Select the decks you want to update</string>
            </property>
           </widget>
          </item>
@@ -181,7 +198,7 @@
          <item row="0" column="0">
           <widget class="QLabel" name="label_5">
            <property name="text">
-            <string>Starting Page:</string>
+            <string>Starting page:</string>
            </property>
           </widget>
          </item>
@@ -201,7 +218,7 @@
          <item row="0" column="3">
           <widget class="QLabel" name="label_6">
            <property name="text">
-            <string>Ending Page:</string>
+            <string>Ending page:</string>
            </property>
           </widget>
          </item>
@@ -216,16 +233,62 @@
        </widget>
       </item>
       <item>
+       <widget class="QGroupBox" name="groupBox_4">
+        <property name="title">
+         <string>Bunpro login</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignmentFlag::AlignCenter</set>
+        </property>
+        <layout class="QFormLayout" name="formLayout">
+         <item row="0" column="0">
+          <widget class="QLabel" name="label_7">
+           <property name="text">
+            <string>Email:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QLineEdit" name="le_bunpro_email"/>
+         </item>
+         <item row="1" column="0">
+          <widget class="QLabel" name="label_8">
+           <property name="text">
+            <string>Password:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="QLineEdit" name="le_bunpro_password">
+           <property name="echoMode">
+            <enum>QLineEdit::EchoMode::Password</enum>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
        <widget class="QPushButton" name="pb_check_vocab">
         <property name="text">
-         <string>Check Vocab</string>
+         <string>Check known vocab</string>
         </property>
        </widget>
       </item>
       <item>
        <widget class="QPushButton" name="pb_start_bot">
         <property name="text">
-         <string>Start Bot</string>
+         <string>Start bot</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="lb_bot_message">
+        <property name="text">
+         <string/>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignmentFlag::AlignCenter</set>
         </property>
        </widget>
       </item>
@@ -234,6 +297,8 @@
    </item>
   </layout>
  </widget>
- <resources/>
+ <resources>
+  <include location="../Resources.qrc"/>
+ </resources>
  <connections/>
 </ui>
