@@ -1,0 +1,8 @@
+<RCC>
+  <qresource prefix="Main Window">
+    <file>bunpro-removebg-preview.png</file>
+  </qresource>
+  <qresource prefix="Vocab Window">
+    <file>anki.png</file>
+  </qresource>
+</RCC>

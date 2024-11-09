@@ -18,12 +18,16 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
 from PySide6.QtWidgets import (QApplication, QGridLayout, QLabel, QListWidget,
     QListWidgetItem, QPushButton, QSizePolicy, QSpacerItem,
     QWidget)
+import Resources_rc
 
 class Ui_w_Vocab_List(object):
     def setupUi(self, w_Vocab_List):
         if not w_Vocab_List.objectName():
             w_Vocab_List.setObjectName(u"w_Vocab_List")
         w_Vocab_List.resize(400, 300)
+        icon = QIcon()
+        icon.addFile(u":/Vocab Window/anki.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        w_Vocab_List.setWindowIcon(icon)
         self.gridLayout = QGridLayout(w_Vocab_List)
         self.gridLayout.setObjectName(u"gridLayout")
         self.pb_close = QPushButton(w_Vocab_List)

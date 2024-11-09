@@ -13,6 +13,10 @@
   <property name="windowTitle">
    <string>Vocab List</string>
   </property>
+  <property name="windowIcon">
+   <iconset resource="../Icons/Resources.qrc">
+    <normaloff>:/Vocab Window/anki.png</normaloff>:/Vocab Window/anki.png</iconset>
+  </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="2" column="1">
     <widget class="QPushButton" name="pb_close">
@@ -46,6 +50,8 @@
    </item>
   </layout>
  </widget>
- <resources/>
+ <resources>
+  <include location="../Icons/Resources.qrc"/>
+ </resources>
  <connections/>
 </ui>
